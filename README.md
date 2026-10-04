@@ -8,6 +8,15 @@ Copyright (c) 2025-2026 Eduardo Correia <ecorreia@apliant.com.br>
 
 See [QUICKSTART.md](QUICKSTART.md) to get running in a few minutes.
 
+## Screenshots
+
+E-Tutor turns any message you write into a private English coaching session: it corrects your text, rewrites it the way a native or an executive would say it, teaches you the vocabulary behind each version, and schedules it all for review the next morning, without ever leaving your keyboard.
+
+| Daily coaching | Saved memory | Review notebook |
+| --- | --- | --- |
+| [![Main window](doc/screenshot/main-window.png)](doc/screenshot/main-window.png) | [![Saved memory](doc/screenshot/saved-memory.png)](doc/screenshot/saved-memory.png) | [![Review notebook](doc/screenshot/review-notebook.png)](doc/screenshot/review-notebook.png) |
+| Correction, grammar notes, native and executive rewrites, a short lesson and a sourced quote. | Browse, search and export every saved card, with dictionary links and personal notes. | Recall before revealing, then self-rate with spaced repetition. |
+
 ## Features
 
 - **Corrected text** first: your own sentence with only the mistakes fixed
