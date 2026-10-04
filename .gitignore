@@ -1,0 +1,22 @@
+.env
+.venv/
+venv/
+venv.old/
+dist/
+output/
+log/
+__pycache__/
+user_prefs.json
+learning_notebook.json
+learning_notebook.json.tmp
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.log
+*.egg-info
+*.egg
+
+# Local AI assistant tooling
+.claude/

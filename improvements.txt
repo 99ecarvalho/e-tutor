@@ -1,0 +1,368 @@
+
+style1_options = [
+    {"id": "use_idioms", "label": "Use Idioms", "description": "Incorporates common idiomatic expressions."},
+    {"id": "sarcastic", "label": "Sarcastic", "description": "Adds dry humor or biting remarks."},
+    {"id": "funny", "label": "Funny", "description": "Light-hearted and humorous."},
+    {"id": "use_slang", "label": "Use Slang", "description": "Includes casual, region-specific expressions."},
+    {"id": "light_profanity", "label": "Light Profanity", "description": "Drops mild swear words for emphasis."},
+    {"id": "slightly_irreverent", "label": "Slightly Irreverent", "description": "Casual with a rebellious edge."},
+    {"id": "spicy", "label": "Spicy", "description": "Bold, edgy, and no-holds-barred."},
+    {"id": "exaggerated", "label": "Exaggerated", "description": "Over-the-top in tone or style."},
+    {"id": "dry", "label": "Dry", "description": "Deadpan and subtle, often ironic."},
+    {"id": "straightforward", "label": "Straightforward", "description": "No fluff, just facts."}
+]
+
+
+style2_options = [
+    {
+        "id": "use_idioms",
+        "label": "Use Idioms and Expressions",
+        "description": "Incorporates common idiomatic phrases and natural expressions."
+    },
+    {
+        "id": "slightly_sarcastic",
+        "label": "Slightly Sarcastic",
+        "description": "Adds subtle sarcasm without sounding offensive or bitter."
+    },
+    {
+        "id": "dry_humor",
+        "label": "Dry Humor",
+        "description": "Delivers wit with a straight face and deadpan tone."
+    },
+    {
+        "id": "use_slang_profanity",
+        "label": "Use Slang and Light Profanity",
+        "description": "Casual and colorful language with light swearing for flavor."
+    },
+    {
+        "id": "spicy",
+        "label": "Spicy",
+        "description": "Bold, direct, edgy, and no-nonsense in tone."
+    },
+    {
+        "id": "wholesome",
+        "label": "Wholesome and Uplifting",
+        "description": "Kind, friendly, and heartwarming tone with positive energy."
+    },
+    {
+        "id": "technical_jargon",
+        "label": "Technical Jargon Allowed",
+        "description": "Uses field-specific terminology freely without simplification."
+    },
+    {
+        "id": "corporate_speak",
+        "label": "Corporate-Speak Overload",
+        "description": "Packed with buzzwords and polished corporate lingo."
+    },
+    {
+        "id": "highly_irreverent",
+        "label": "Highly Irreverent (Borderline Chaos)",
+        "description": "Chaotic, rebellious, and potentially offensive in tone."
+    },
+    {
+        "id": "extremely_diplomatic",
+        "label": "Extremely Diplomatic",
+        "description": "Hyper-polite and politically correct, tiptoeing around conflict."
+    },
+    {
+        "id": "poetic_literary",
+        "label": "Poetic or Literary Tone",
+        "description": "Uses metaphors, rhythm, and elevated vocabulary for artistic flair."
+    }
+]
+
+
+style_presets = [
+    {
+        "id": "formal_diplomatic",
+        "label": "Formal & Diplomatic",
+        "description": "Polished, polite, and professional — ideal for official or sensitive communication.",
+        "includes": [
+            "extremely_diplomatic",
+            "poetic_literary"
+        ]
+    },
+    {
+        "id": "casual_friendly",
+        "label": "Casual & Friendly",
+        "description": "Relaxed tone that’s easy to read and understand. Good for team chats or informal comms.",
+        "includes": [
+            "use_idioms",
+            "wholesome",
+            "use_slang_profanity"
+        ]
+    },
+    {
+        "id": "tech_pro",
+        "label": "Technical & Professional",
+        "description": "Great for engineers or devs — assumes readers know the lingo and get straight to the point.",
+        "includes": [
+            "technical_jargon",
+            "dry_humor",
+            "straightforward"
+        ]
+    },
+    {
+        "id": "chaotic_fun",
+        "label": "Chaotic & Fun",
+        "description": "Unfiltered, bold, and often irreverent — best used with people who won’t report you to HR.",
+        "includes": [
+            "spicy",
+            "slightly_sarcastic",
+            "highly_irreverent",
+            "use_slang_profanity"
+        ]
+    },
+    {
+        "id": "marketing_hype",
+        "label": "Marketing Buzz",
+        "description": "Full of hype, drama, and positivity. Everything is a game-changer.",
+        "includes": [
+            "corporate_speak",
+            "poetic_literary",
+            "wholesome"
+        ]
+    },
+    {
+        "id": "deadpan_ironic",
+        "label": "Deadpan & Ironic",
+        "description": "Dry, sarcastic tone perfect for satire or subtle humor.",
+        "includes": [
+            "dry_humor",
+            "slightly_sarcastic"
+        ]
+    }
+]
+
+audience_personas = [
+    {"id": "dev_rant", "label": "Spicy Devs-Only Version", "description": "Unfiltered tone for developers — ideal for venting in standups."},
+    {"id": "qa_sarcasm", "label": "Spicier QA Engineer Edition", "description": "For bug reports loaded with passive-aggressive brilliance."},
+    {"id": "manager_sarcasm", "label": "For Managers Who Get Sarcasm", "description": "Dry wit made safe for your tech lead or product manager."},
+    {"id": "startup_bro", "label": "Overcaffeinated Startup Bro Version", "description": "Buzzwords, hustle, and a pitch deck in every sentence."},
+    {"id": "full_chaos", "label": "Full Chaos Mode", "description": "Zero filters. All gas, no brakes. Use with caution."},
+    {"id": "legal", "label": "Legal Edition", "description": "Safe, vague, and full of plausible deniability."},
+    {"id": "sales", "label": "Sales Edition", "description": "Turns every bug into a potential market opportunity."},
+    {"id": "client", "label": "Client Edition", "description": "Polite and reassuring, even when everything is on fire."},
+    {"id": "ceo", "label": "CEO Edition", "description": "Calm optimism for when leadership needs updates without drama."},
+    {"id": "marketing", "label": "Marketing Edition", "description": "Hypes up fixes like they’re groundbreaking features."},
+    {"id": "board", "label": "Board of Directors Edition", "description": "Buzzwords and corporate confidence, polished to perfection."}
+]
+
+
+=================
+
+style_options = [
+    {"id": "use_idioms", "label": "Use Idioms and Expressions", "description": "Incorporates common idiomatic phrases and natural expressions."},
+    {"id": "slightly_sarcastic", "label": "Slightly Sarcastic", "description": "Adds subtle sarcasm without sounding offensive or bitter."},
+    {"id": "dry_humor", "label": "Dry Humor", "description": "Delivers wit with a straight face and deadpan tone."},
+    {"id": "use_slang_profanity", "label": "Use Slang and Light Profanity", "description": "Casual and colorful language with light swearing for flavor."},
+    {"id": "spicy", "label": "Spicy", "description": "Bold, direct, edgy, and no-nonsense in tone."},
+    {"id": "wholesome", "label": "Wholesome and Uplifting", "description": "Kind, friendly, and heartwarming tone with positive energy."},
+    {"id": "technical_jargon", "label": "Technical Jargon Allowed", "description": "Uses field-specific terminology freely without simplification."},
+    {"id": "corporate_speak", "label": "Corporate-Speak Overload", "description": "Packed with buzzwords and polished corporate lingo."},
+    {"id": "highly_irreverent", "label": "Highly Irreverent (Borderline Chaos)", "description": "Chaotic, rebellious, and potentially offensive in tone."},
+    {"id": "extremely_diplomatic", "label": "Extremely Diplomatic", "description": "Hyper-polite and politically correct, tiptoeing around conflict."},
+    {"id": "poetic_literary", "label": "Poetic or Literary Tone", "description": "Uses metaphors, rhythm, and elevated vocabulary for artistic flair."}
+]
+
+style_presets = [
+    {
+        "id": "formal_diplomatic",
+        "label": "Formal & Diplomatic",
+        "description": "Polished, polite, and professional — ideal for official or sensitive communication.",
+        "includes": ["extremely_diplomatic", "poetic_literary"]
+    },
+    {
+        "id": "casual_friendly",
+        "label": "Casual & Friendly",
+        "description": "Relaxed tone that’s easy to read and understand. Good for team chats or informal comms.",
+        "includes": ["use_idioms", "wholesome", "use_slang_profanity"]
+    },
+    {
+        "id": "tech_pro",
+        "label": "Technical & Professional",
+        "description": "Great for engineers or devs — assumes readers know the lingo and get straight to the point.",
+        "includes": ["technical_jargon", "dry_humor"]
+    },
+    {
+        "id": "chaotic_fun",
+        "label": "Chaotic & Fun",
+        "description": "Unfiltered, bold, and often irreverent — best used with people who won’t report you to HR.",
+        "includes": ["spicy", "slightly_sarcastic", "highly_irreverent", "use_slang_profanity"]
+    },
+    {
+        "id": "marketing_hype",
+        "label": "Marketing Buzz",
+        "description": "Full of hype, drama, and positivity. Everything is a game-changer.",
+        "includes": ["corporate_speak", "poetic_literary", "wholesome"]
+    },
+    {
+        "id": "deadpan_ironic",
+        "label": "Deadpan & Ironic",
+        "description": "Dry, sarcastic tone perfect for satire or subtle humor.",
+        "includes": ["dry_humor", "slightly_sarcastic"]
+    }
+]
+
+audience_personas = [
+    {
+        "id": "dev_rant",
+        "label": "Spicy Devs-Only Version",
+        "description": "The daily standup rant. High emotion, low filter, dev-to-dev."
+    },
+    {
+        "id": "qa_vengeance",
+        "label": "Spicier QA Engineer Edition",
+        "description": "Passive-aggressive bug hunter’s manifesto. Aimed at repeat offenders."
+    },
+    {
+        "id": "manager_who_gets_it",
+        "label": "For Managers Who Actually Get Sarcasm",
+        "description": "Playful yet insightful. Adds just enough bite for smart managers."
+    },
+    {
+        "id": "startup_bro",
+        "label": "Overcaffeinated Startup Bro Version",
+        "description": "Extreme energy. Hustle vibes. Everything is 🔥🚀."
+    },
+    {
+        "id": "full_chaos",
+        "label": "Full Chaos Mode",
+        "description": "Unhinged. Irreverent. Hilarious or catastrophic. Use wisely."
+    },
+    {
+        "id": "legal_mode",
+        "label": "Legal Edition",
+        "description": "Safe, sanitized, and free of personality. Zero liability."
+    },
+    {
+        "id": "sales_mode",
+        "label": "Sales Edition",
+        "description": "Spin everything into a win. Sound polished and hungry."
+    },
+    {
+        "id": "client_friendly",
+        "label": "Client Edition",
+        "description": "Friendly and diplomatic — assures the client everything is fine… probably."
+    },
+    {
+        "id": "ceo_mode",
+        "label": "CEO Edition",
+        "description": "Strategic, optimistic, and calm. Best for status reports or exec comms."
+    },
+    {
+        "id": "marketing_mode",
+        "label": "Marketing Edition",
+        "description": "Buzzwords, brand voice, and excitement. Even minor fixes feel like magic."
+    },
+    {
+        "id": "board_mode",
+        "label": "Board of Directors Edition",
+        "description": "High-level, calm, and buzzword-compliant. Perfect for strategic updates."
+    }
+]
+
+
+===========
+Ja incluido:
+language_levels = [
+    {"id": "b2", "label": "B2 Level", "description": "Upper-Intermediate; suitable for professional use with minor grammar slips."},
+    {"id": "c2", "label": "C2 Level", "description": "Proficient; fluent with native-like flexibility and accuracy."},
+    {"id": "native", "label": "Native Speaker", "description": "Natural fluency with concise, confident language."},
+    {"id": "phd_native", "label": "PhD-Level Native Speaker", "description": "Extremely formal, precise, and structured language."}
+]
+
+
+
+[
+  {
+    "id": "formal",
+    "description": "Polite, respectful, and structured language. Suitable for professional or academic communication.",
+    "example": "The issue has been addressed and further monitoring is in progress."
+  },
+  {
+    "id": "neutral",
+    "description": "Clear and balanced communication, free of strong emotion or bias. Useful for general-purpose writing.",
+    "example": "We fixed the issue, but some problems remain."
+  },
+  {
+    "id": "casual",
+    "description": "Relaxed and conversational tone, like speaking to a friend or close colleague.",
+    "example": "Yeah, we fixed it—still a bit weird though."
+  },
+  {
+    "id": "assertive",
+    "description": "Confident, direct, and firm without being aggressive. Shows ownership and decisiveness.",
+    "example": "The problem was fixed. We expect no further issues."
+  },
+  {
+    "id": "friendly",
+    "description": "Warm and approachable tone that builds rapport and shows empathy.",
+    "example": "We’ve fixed it—thanks so much for your patience!"
+  },
+  {
+    "id": "professional",
+    "description": "Polished and courteous tone suitable for business contexts. Clear and respectful.",
+    "example": "The fix has been deployed. Let us know if any anomalies persist."
+  },
+  {
+    "id": "apologetic",
+    "description": "Humble and sincere tone used to acknowledge issues or express regret.",
+    "example": "We’re sorry for the inconvenience. A fix has been applied, and we’re continuing to monitor the situation."
+  },
+  {
+    "id": "enthusiastic",
+    "description": "Energetic and positive tone that shows excitement and engagement.",
+    "example": "We fixed it! Everything’s running smoothly again 🎉"
+  },
+  {
+    "id": "encouraging",
+    "description": "Supportive and uplifting tone used to motivate or reassure the reader.",
+    "example": "You’re doing great! Just a few more tweaks and this will be spot on."
+  },
+  {
+    "id": "humble",
+    "description": "Modest and respectful tone that avoids arrogance and invites collaboration.",
+    "example": "We believe we’ve addressed the main issue, but we welcome any further feedback."
+  },
+  {
+    "id": "ironic",
+    "description": "Witty tone that often says the opposite of what is meant, typically to highlight absurdity.",
+    "example": "Oh great, it only crashed three times today—that's progress, right?"
+  },
+  {
+    "id": "sarcastic",
+    "description": "Mocking tone that exaggerates or distorts to express frustration or humor.",
+    "example": "Yep, totally fixed. That infinite loop is definitely a feature now."
+  },
+  {
+    "id": "dramatic",
+    "description": "Exaggerated and emotional tone used for effect or humor.",
+    "example": "We fixed it... but not before staring into the abyss of deployment failure."
+  },
+  {
+    "id": "urgent",
+    "description": "Fast-paced and intense tone that conveys importance and immediate attention.",
+    "example": "We need to fix this now. It’s impacting users and causing major disruptions."
+  },
+  {
+    "id": "inspirational",
+    "description": "Uplifting and motivational tone that encourages perseverance and vision.",
+    "example": "Every bug we fix brings us one step closer to greatness."
+  },
+  {
+    "id": "didactic",
+    "description": "Instructive and educational tone, often used to explain or teach.",
+    "example": "This issue occurred because the buffer wasn't cleared—next time, initialize before use."
+  },
+  {
+    "id": "playful",
+    "description": "Light-hearted and humorous tone, often using jokes or a sense of fun.",
+    "example": "We gave the bug a timeout. It's thinking about what it did."
+  },
+  {
+    "id": "minimalist",
+    "description": "Extremely concise and efficient tone that says only what is necessary.",
+    "example": "Fixed. Monitoring."
+  }
+]
