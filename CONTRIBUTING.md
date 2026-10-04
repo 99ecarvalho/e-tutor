@@ -88,7 +88,7 @@ Describe what you tested in the pull request.
 
 1. For anything larger than a small fix, **open an issue first** to discuss
    the approach.
-2. Fork the repository and create a branch from `main`:
+2. Fork the repository and create a branch from `master`:
    `git checkout -b fix/review-scheduling`.
 3. Keep each pull request focused on one topic. Unrelated clean-ups belong in a
    separate pull request.

@@ -1,5 +1,12 @@
 # Runs E-Tutor, creating the .venv virtual environment on first use.
-# (c) Eduardo Correia <ecorreia@apliant.com.br>
+#
+# Copyright (c) 2025-2026 Eduardo Correia <ecorreia@apliant.com.br>
+#
+# This file is part of E-Tutor. It is free software, licensed under the GNU
+# Lesser General Public License v3.0 or later. See COPYING.LESSER and COPYING
+# for details.
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
 
 Set-Location -Path $PSScriptRoot
 Write-Host "Starting E-Tutor..."

@@ -1,3 +1,11 @@
+# Copyright (c) 2025-2026 Eduardo Correia <ecorreia@apliant.com.br>
+#
+# This file is part of E-Tutor. It is free software, licensed under the GNU
+# Lesser General Public License v3.0 or later. See COPYING.LESSER and COPYING
+# for details.
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 """Memory and request-history windows. Browsing and export never call the model."""
 
 import tkinter as tk

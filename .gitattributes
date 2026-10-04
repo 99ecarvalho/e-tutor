@@ -1,0 +1,7 @@
+# Normalize line endings: LF in the repository and in the working tree,
+# except PowerShell scripts, which are checked out with CRLF for Windows.
+* text=auto eol=lf
+*.ps1 text eol=crlf
+
+*.ico binary
+*.png binary
