@@ -16,7 +16,7 @@ import re
 from urllib.parse import urlencode
 
 from coaching import dict_list, normalize_result
-from quotes import saved_quote
+from quotes import saved_excerpt, saved_quote
 
 
 def dictionary_links(term):
@@ -25,6 +25,21 @@ def dictionary_links(term):
         "Oxford": "https://www.oxfordlearnersdictionaries.com/search/english/?" + urlencode({"q": term}),
         "Cambridge": "https://dictionary.cambridge.org/search/direct/?" + urlencode({"dataset": "english", "q": term}),
     }
+
+
+def correction_record(query, result, model=""):
+    """A self-contained corrections.jsonl line for lesson building; None when nothing was corrected."""
+    corrected = result.get("corrected", "")
+    notes = [n for n in dict_list(result.get("notes")) if n.get("wrong") or n.get("right")]
+    if not notes and (not corrected or corrected == query.strip()):
+        return None
+    options = result.get("request_options") or {}
+    return {"schema": "e-tutor.correction/1", "id": result.get("request_id", ""),
+            "timestamp": result.get("timestamp", ""), "model": model,
+            "context": options.get("context", ""), "tone": options.get("tone", ""),
+            "explain_language": options.get("explain_language", ""),
+            "original": query, "corrected": corrected,
+            "corrections": [{k: n.get(k, "") for k in ("wrong", "right", "why", "category")} for n in notes]}
 
 
 def make_card(kind, term, meaning="", example="", usage="", source="", result=None, **extra):
@@ -121,6 +136,9 @@ def replay_result(entry):
     quote = saved_quote(data.get("quote"))
     if quote:
         result["quote"] = quote
+    excerpt = saved_excerpt(data.get("excerpt"))
+    if excerpt:
+        result["excerpt"] = excerpt
     request_options = data.get("request_options", entry.get("options", entry))
     result.update(request_id=entry.get("id", ""), timestamp=entry.get("timestamp", ""),
                   request_options=request_options if isinstance(request_options, dict) else {},

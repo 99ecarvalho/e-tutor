@@ -23,6 +23,9 @@ FOCUSES = [
     {"id": "executive", "label": "Executive communication"},
     {"id": "persuasion", "label": "NLP-inspired persuasion"},
 ]
+# Lets a later lesson-building step group the saved corrections by error type.
+NOTE_CATEGORIES = ("grammar", "verb tense", "preposition", "article", "word choice", "collocation", "word order",
+                   "spelling", "punctuation", "register")
 DOMAINS = ["everyday life", "arts and literature", "civic life", "relationships and social plans",
            "food and hospitality", "sports and popular expressions"]
 
@@ -36,10 +39,13 @@ def learning_prompt(opts):
     recent = json.dumps(opts.get("recent_terms", [])[-40:], ensure_ascii=False)
     language = "Brazilian Portuguese" if opts.get("explain_language") == "pt" else "English"
     focus = opts.get("resolved_focus", "executive")
+    example_field = ', "technique_example": "..."' if focus == "persuasion" else ""
     focus_instruction = (
         "NLP-inspired persuasion practice: teach one transparent technique such as reframing a problem as a shared "
         "outcome, perspective-taking, matching the listener's terminology, or asking a clarifying question. "
-        "Show how it applies to THIS message. Separate any proposed question from the rewrite. "
+        "Show how it applies to THIS message. In technique_example, rewrite THIS message applying the technique: "
+        "same facts, commitments, and certainty, nothing invented; put any proposed question after the rewrite; "
+        "it does not count toward the word limits. "
         "Respect the listener's freedom to disagree; avoid covert manipulation, invented motives, eye-accessing cues, "
         "claims about learning styles, or claims that NLP has established neurological effects."
         if focus == "persuasion" else
@@ -67,7 +73,33 @@ def learning_prompt(opts):
    Daily bite: keep the entire learning section under 180 words. Deep dive: under 330 words.
    JSON field to ADD to the object:
    "learning": {{"items": [{{"kind": "vocabulary|idiom|culture", "term": "...", "meaning_pt": "...", "example": "...", "usage": "..."}}],
-                "communication": "..."}}
+                "communication": "..."{example_field}}}
+"""
+
+
+BOOK_THEMES = ["power, strategy and human nature (in the vein of Robert Greene)", "CEO leadership and management",
+               "ambition and career growth", "personal growth and mindset", "productivity and focus",
+               "resilience and Stoicism", "negotiation and influence", "habits and self-discipline",
+               "leading teams and giving feedback"]
+
+
+def book_idea_prompt(opts):
+    """The model writes the 30-second read; the app falls back to its own readings when it is null."""
+    if not opts.get("book_excerpt", True):
+        return '\n5. book_idea: null.'
+    theme = BOOK_THEMES[opts.get("excerpt_index", 0) % len(BOOK_THEMES)]
+    recent = json.dumps(opts.get("recent_books", [])[-30:], ensure_ascii=False)
+    language = "Brazilian Portuguese" if opts.get("explain_language") == "pt" else "English"
+    return f"""
+5. book_idea: a 30-second read (70-90 words, English) explaining ONE central idea from a well-known, published
+   nonfiction book about {theme}. Write an original paragraph in your own words: no quotations and no close
+   paraphrase of the book's sentences; named concepts are fine when attributed to the author.
+   Choose only books and ideas you are certain about; never invent titles, years, studies, or claims. If unsure, return null.
+   Do not use these recently used titles: {recent}.
+   Use rich but natural C2 vocabulary. notice: one expression from YOUR paragraph worth learning, explained in {language}
+   (max 25 words). application: one concrete way to apply the idea at work or in US life, in {language} (max 30 words).
+   JSON field to ADD to the object:
+   "book_idea": {{"title": "...", "author": "...", "year": "...", "text": "...", "notice": "...", "application": "..."}}
 """
 
 
@@ -85,7 +117,8 @@ def normalize_result(data, opts):
         raise ValueError("The response was not a JSON object. Please try again.")
     result = {"corrected": clean_string(data.get("corrected")), "notes": [], "versions": []}
     if opts.get("grammar_notes"):
-        result["notes"] = [{key: clean_string(n.get(key)) for key in ("wrong", "right", "why")}
+        result["notes"] = [dict({key: clean_string(n.get(key)) for key in ("wrong", "right", "why")},
+                                category=n["category"] if n.get("category") in NOTE_CATEGORIES else "other")
                            for n in dict_list(data.get("notes"))[:6]]
     versions = dict_list(data.get("versions"))
     for level in opts.get("levels", []):
@@ -113,6 +146,16 @@ def normalize_result(data, opts):
             if all(card[k] for k in ("term", "meaning_pt", "example")):
                 items.append(dict(card, kind=kind))
         result["learning"] = {"items": items, "communication": clean_string(lesson.get("communication"), 2500)}
+        example = clean_string(lesson.get("technique_example"), 2500)
+        if example:
+            result["learning"]["technique_example"] = example
+    idea = data.get("book_idea")
+    if opts.get("book_excerpt", True) and isinstance(idea, dict):
+        if isinstance(idea.get("year"), int):
+            idea = dict(idea, year=str(idea["year"]))
+        idea = {k: clean_string(idea.get(k), 2500) for k in ("title", "author", "year", "text", "notice", "application")}
+        if all(idea[k] for k in ("title", "author", "text")):
+            result["book_idea"] = idea
     if not result["corrected"] and not result["versions"]:
         raise ValueError("The response contained no usable correction or rewrite. Please try again.")
     return result

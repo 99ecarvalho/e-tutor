@@ -17,8 +17,8 @@ import unittest
 from unittest.mock import MagicMock, patch
 import uuid
 
-from coaching import LearningStore, learning_prompt, normalize_result
-from quotes import quote_for
+from coaching import LearningStore, book_idea_prompt, learning_prompt, normalize_result
+from quotes import excerpt_for, quote_for
 
 
 @contextmanager
@@ -84,6 +84,30 @@ class ResponseTests(unittest.TestCase):
         self.assertNotIn('"drill"', prompt)
         self.assertNotIn("15-second", prompt)
         self.assertIn("Executive communication practice", learning_prompt(dict(OPTS, resolved_focus="executive")))
+        self.assertIn('"technique_example"', prompt)
+        self.assertNotIn("technique_example", learning_prompt(dict(OPTS, resolved_focus="executive")))
+
+    def test_book_idea_prompt_and_validation(self):
+        prompt = book_idea_prompt(dict(OPTS, recent_books=["Mastery"], excerpt_index=0))
+        self.assertIn("Robert Greene", prompt)
+        self.assertIn('["Mastery"]', prompt)
+        self.assertIn("no quotations", prompt)
+        self.assertEqual(book_idea_prompt(dict(OPTS, book_excerpt=False)).strip(), "5. book_idea: null.")
+        idea = {"title": "Deep Work", "author": "Cal Newport", "year": 2016, "text": "Focus is rare.",
+                "notice": "rare", "application": "Block time."}
+        self.assertEqual(normalize_result(dict(sample(), book_idea=idea), OPTS)["book_idea"]["year"], "2016")
+        self.assertNotIn("book_idea", normalize_result(dict(sample(), book_idea=dict(idea, title=None)), OPTS))
+        self.assertNotIn("book_idea", normalize_result(dict(sample(), book_idea=idea), dict(OPTS, book_excerpt=False)))
+
+    def test_note_categories_and_technique_example(self):
+        data = sample()
+        data["notes"] = [{"wrong": "depends of", "right": "depends on", "why": "Use on.", "category": "preposition"},
+                         {"wrong": "a", "right": "b", "why": "c", "category": "made up"}]
+        data["learning"]["technique_example"] = "Could we agree on the outcome first?"
+        result = normalize_result(data, OPTS)
+        self.assertEqual([n["category"] for n in result["notes"]], ["preposition", "other"])
+        self.assertEqual(result["learning"]["technique_example"], "Could we agree on the outcome first?")
+        self.assertNotIn("technique_example", normalize_result(sample(), OPTS)["learning"])
 
 
 class NotebookTests(unittest.TestCase):
@@ -182,11 +206,23 @@ class AppTests(unittest.TestCase):
                     app.quote_var.set(True)
                     result = normalize_result(sample(), OPTS)
                     result["quote"] = quote_for(0)
+                    result["excerpt"] = excerpt_for(0)
+                    result["learning"]["technique_example"] = "Could we agree on the outcome first?"
                     result["notes"] = [{"wrong": "depends of", "right": "depends on", "why": "Use on after depend."}]
                     app.show_result("I might need another day.", result, result["versions"])
                     self.assertIn("Make it yours", app.output_text.get("1.0", "end"))
                     self.assertIn("[Oxford]", app.output_text.get("1.0", "end"))
                     self.assertIn("[Source]", app.output_text.get("1.0", "end"))
+                    self.assertIn("30-second read", app.output_text.get("1.0", "end"))
+                    self.assertIn("not a quotation", app.output_text.get("1.0", "end"))
+                    result["book_idea"] = {"title": "Deep Work", "author": "Cal Newport", "year": "2016",
+                                           "text": "Focus is becoming rare and valuable.", "notice": "rare",
+                                           "application": "Block two hours."}
+                    app.show_result("I might need another day.", result, result["versions"])
+                    self.assertIn("AI-written summary of ideas from Deep Work (2016)", app.output_text.get("1.0", "end"))
+                    del result["book_idea"]
+                    self.assertIn("Could we agree on the outcome first?", app.output_text.get("1.0", "end"))
+                    self.assertTrue(app.get_options()["book_excerpt"])
                     self.assertNotIn("15-second", app.output_text.get("1.0", "end"))
                     self.assertFalse(hasattr(app, "practice_button"))
                     def check_link_spaces():

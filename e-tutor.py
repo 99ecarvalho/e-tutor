@@ -27,10 +27,11 @@ import keyboard
 import pystray
 from openai import AzureOpenAI, BadRequestError, OpenAI, OpenAIError
 from PIL import Image, ImageDraw
-from coaching import DEPTHS, FOCUSES, LearningStore, learning_prompt, normalize_result
-from memory_tools import dictionary_links, make_card, replay_result
+from coaching import (DEPTHS, FOCUSES, NOTE_CATEGORIES, LearningStore, book_idea_prompt, learning_prompt,
+                      normalize_result)
+from memory_tools import correction_record, dictionary_links, make_card, replay_result
 from tutor_library import LibraryWindow
-from quotes import quote_for
+from quotes import book_search, excerpt_for, quote_for
 
 APP_NAME = "E-Tutor"
 APP_VERSION = "2.2"
@@ -41,6 +42,8 @@ FROZEN = getattr(sys, "frozen", False)
 BASE_DIR = os.path.dirname(sys.executable if FROZEN else os.path.abspath(__file__))
 LOG_DIR = os.path.join(BASE_DIR, "log")
 API_LOG_FILE = os.path.join(LOG_DIR, "api_log.jsonl")
+# One record per corrected request, for an agent that turns recurring mistakes into lessons.
+CORRECTIONS_FILE = os.path.join(LOG_DIR, "corrections.jsonl")
 PREFS_FILE = os.path.join(BASE_DIR, "user_prefs.json")
 ENV_FILE = os.path.join(BASE_DIR, ".env")
 API_KEY_VAR = "OPENAI_API_KEY"
@@ -234,8 +237,8 @@ def build_user_prompt(text, opts):
     ]
     if opts["grammar_notes"]:
         lines.append("2. notes: one note for every mistake you fixed in corrected (at most 6), most important first; "
-                     f"each with the wrong part, the fix, and a one-sentence reason in {explain_in}. Empty if there "
-                     "are none.")
+                     f"each with the wrong part, the fix, a one-sentence reason in {explain_in}, and a category "
+                     f"from: {', '.join(NOTE_CATEGORIES)}. Empty if there are none.")
     else:
         lines.append("2. notes: always an empty list.")
     if opts["levels"]:
@@ -252,10 +255,10 @@ def build_user_prompt(text, opts):
         lines.append("3. versions: always an empty list.")
     lines += [
         "",
-        'JSON shape: {"corrected": "...", "notes": [{"wrong": "...", "right": "...", "why": "..."}], '
+        'JSON shape: {"corrected": "...", "notes": [{"wrong": "...", "right": "...", "why": "...", "category": "..."}], '
         '"versions": [{"level": "b2", "variant": 1, "text": "...", "vocabulary": [{"term": "...", "meaning": "..."}]}]}',
     ]
-    return "\n".join(lines) + learning_prompt(opts)
+    return "\n".join(lines) + learning_prompt(opts) + book_idea_prompt(opts)
 
 
 def version_count(opts):
@@ -462,6 +465,9 @@ class ConfigManager:
         "communication_focus": "mixed",
         "quote": True,
         "quote_index": 0,
+        "book_excerpt": True,
+        "excerpt_index": 0,
+        "recent_books": [],
     }
 
     @classmethod
@@ -564,13 +570,30 @@ class APIClient:
         versions = result["versions"]
         if options.get("quote", True):
             result["quote"] = quote_for(options.get("quote_index", 0))
+        if options.get("book_excerpt", True) and not result.get("book_idea"):
+            result["excerpt"] = excerpt_for(options.get("excerpt_index", 0))  # built-in fallback
         result["usage"] = usage = read_usage(response, model, len(versions))
         result["request_options"] = dict(options)
         result["request_id"] = uuid.uuid4().hex
         result["timestamp"] = datetime.datetime.now().isoformat()
         if not self._log_interaction(text, content, usage, model, params.get("temperature"), options, result=result):
             result["history_warning"] = "Could not save this request to history."
+        elif not self._log_correction(text, result, model):
+            result["history_warning"] = "Could not save this correction to corrections.jsonl."
         return result
+
+    def _log_correction(self, query, result, model):
+        record = correction_record(query, result, model)
+        if record is None:
+            return True
+        try:
+            os.makedirs(os.path.dirname(CORRECTIONS_FILE), exist_ok=True)
+            with open(CORRECTIONS_FILE, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record, ensure_ascii=False) + "\n")
+            return True
+        except OSError as e:
+            logger.warning(f"Failed to log correction: {e}")
+            return False
 
     def _log_interaction(self, query, response_content, usage, model, temperature, options, result=None, error=None):
         log_entry = {
@@ -654,6 +677,9 @@ class AppGUI:
         self.recent_terms = [c["term"] for c in self.notebook.cards[-40:]]
         self.lesson_index = len(self.notebook.cards)
         self.quote_index = self.prefs["quote_index"]
+        self.excerpt_index = self.prefs["excerpt_index"]
+        books = self.prefs["recent_books"] if isinstance(self.prefs["recent_books"], list) else []
+        self.recent_books = [t for t in books if isinstance(t, str)][-30:]
         self.review_window = None
         # Tk is not thread-safe: hotkey, tray and API threads hand work to the main thread through this queue.
         self.ui_queue = queue.Queue()
@@ -760,7 +786,7 @@ class AppGUI:
         self.output_text.config(state=tk.NORMAL)
         self.output_text.insert(tk.END, " Your daily English coach \n", "header")
         self.output_text.insert(tk.END, "Use Daily coach for a natural rewrite, an Executive alternative, and a short lesson.\n\n"
-            "Send a real message. Read the feedback and a short, sourced leadership quote.\n\n"
+            "Send a real message. Read the feedback, a short sourced quote and a 30-second book read.\n\n"
             "Save useful lessons, then use Review notebook for a few minutes each day.\n"
             "Vocabulary translations stay in Portuguese even when explanations are in English.\n\n"
             "Ctrl+Shift+R sends clipboard text. Enter sends your draft; Shift+Enter adds a line.\n"
@@ -842,6 +868,11 @@ class AppGUI:
         checkbutton(coaching_row, "US culture", self.culture_var)
         self.quote_var = tk.BooleanVar(value=prefs["quote"])
         checkbutton(coaching_row, "Quote", self.quote_var, "A rotating English quote with a practical note and source. No extra API tokens.")
+        self.excerpt_var = tk.BooleanVar(value=prefs["book_excerpt"])
+        checkbutton(coaching_row, "30-second read", self.excerpt_var,
+                    "The model summarizes an idea from a nonfiction book on power, leadership, ambition, productivity or "
+                    "resilience, with one expression to notice. About 150 extra output tokens. "
+                    "If it skips one, a built-in reading is shown instead.")
         self.auto_copy_var = tk.BooleanVar(value=prefs["auto_copy"])
         checkbutton(coaching_row, "Auto-copy first rewrite", self.auto_copy_var)
         label(frame, "Comm. focus", row=4, column=0)
@@ -1193,6 +1224,7 @@ class AppGUI:
             "learning_depth": id_for(DEPTHS, self.depth_var.get()),
             "culture_notes": self.culture_var.get(),
             "quote": self.quote_var.get(),
+            "book_excerpt": self.excerpt_var.get(),
             "auto_copy": self.auto_copy_var.get(),
             "communication_focus": id_for(FOCUSES, self.focus_var.get()),
         }
@@ -1211,6 +1243,8 @@ class AppGUI:
             parts.append("lesson")
         if opts["quote"]:
             parts.append("quote")
+        if opts["book_excerpt"]:
+            parts.append("30-second read")
         self.count_label.config(text="Each request: " + " + ".join(parts))
         prefs = ConfigManager.load()
         prefs.update(opts)
@@ -1259,7 +1293,8 @@ class AppGUI:
             self.set_status("⏳ Still working on the previous request...")
             return
         opts = self.get_options()
-        opts.update(recent_terms=list(self.recent_terms), lesson_index=self.lesson_index, quote_index=self.quote_index)
+        opts.update(recent_terms=list(self.recent_terms), lesson_index=self.lesson_index, quote_index=self.quote_index,
+                    excerpt_index=self.excerpt_index, recent_books=list(self.recent_books))
         opts["resolved_focus"] = (random.choice(["executive", "persuasion"])
                                   if opts["communication_focus"] == "mixed" else opts["communication_focus"])
         user_prompt = build_user_prompt(text, opts)
@@ -1310,6 +1345,12 @@ class AppGUI:
         if result.get("quote"):
             self.quote_index += 1
             ConfigManager.set("quote_index", self.quote_index)
+        if result.get("excerpt") or result.get("book_idea"):
+            self.excerpt_index += 1
+            ConfigManager.set("excerpt_index", self.excerpt_index)
+        if result.get("book_idea"):
+            self.recent_books = (self.recent_books + [result["book_idea"]["title"]])[-30:]
+            ConfigManager.set("recent_books", self.recent_books)
         if self.last_lesson:
             self.recent_terms = (self.recent_terms + [i["term"] for i in self.last_lesson["items"]])[-40:]
             self.lesson_index += 1
@@ -1431,6 +1472,10 @@ class AppGUI:
                 self._insert_memory_actions(self.memory_card("communication", lesson["communication"], focus_label,
                                                             text, lesson["communication"]), references=False)
                 out.insert(tk.END, "\n\n")
+            if lesson.get("technique_example"):
+                out.insert(tk.END, "Your message with the technique applied:\n", "hint")
+                self._insert_copyable(lesson["technique_example"])
+                out.insert(tk.END, "\n\n")
         quote = result.get("quote")
         if quote:
             out.insert(tk.END, " Quote \n", "header")
@@ -1444,6 +1489,45 @@ class AppGUI:
                 reference_url=quote["source_url"])
             self._insert_memory_actions(card, references=False)
             self._insert_action("[Source]", lambda u=quote["source_url"]: self.open_url(u))
+            out.insert(tk.END, "\n\n")
+        idea = result.get("book_idea")
+        excerpt = result.get("excerpt")
+        if idea:
+            work = f'{idea["title"]} ({idea["year"]})' if idea["year"] else idea["title"]
+            url = book_search(idea["title"], idea["author"])
+            out.insert(tk.END, " 30-second read \n", "header")
+            out.insert(tk.END, f'{idea["text"]}\n', "input")
+            out.insert(tk.END, f'AI-written summary of ideas from {work} by {idea["author"]}, not a quotation\n', "hint")
+            if idea["notice"]:
+                out.insert(tk.END, "Notice: " + idea["notice"] + "\n", "vocab")
+            if idea["application"]:
+                out.insert(tk.END, "Application: " + idea["application"], "note")
+            card = self.memory_card("summary", idea["text"], f'{idea["notice"]}\n{idea["application"]}'.strip(),
+                idea["text"], f'{idea["author"]} \u00b7 {work}', quote_author=idea["author"], quote_work=work,
+                reference_url=url)
+            self._insert_memory_actions(card, references=False)
+            self._insert_action("[Source]", lambda u=url: self.open_url(u))
+            out.insert(tk.END, "\n\n")
+        elif excerpt:
+            language = result.get("request_options", {}).get("explain_language", "pt")
+            notice = excerpt["notice_pt" if language == "pt" else "notice_en"]
+            application = excerpt["application_pt" if language == "pt" else "application_en"]
+            out.insert(tk.END, " 30-second read \n", "header")
+            if excerpt.get("kind") == "summary":
+                # Our paraphrase of the book's ideas; never shown as if it were the author's words.
+                out.insert(tk.END, f'{excerpt["text"]}\n', "input")
+                out.insert(tk.END, f'Tutor summary of ideas from {excerpt["work"]} by {excerpt["author"]}, '
+                                   "not a quotation\n", "hint")
+            else:
+                out.insert(tk.END, f'“{excerpt["text"]}”\n', "input")
+                out.insert(tk.END, f'{excerpt["author"]} · {excerpt["work"]} · public domain\n', "hint")
+            out.insert(tk.END, "Notice: " + notice + "\n", "vocab")
+            out.insert(tk.END, "Application (tutor note): " + application, "note")
+            card = self.memory_card(excerpt["kind"], excerpt["text"], f"{notice}\n{application}", excerpt["text"],
+                f'{excerpt["author"]} · {excerpt["work"]}', quote_author=excerpt["author"], quote_work=excerpt["work"],
+                reference_url=excerpt["source_url"])
+            self._insert_memory_actions(card, references=False)
+            self._insert_action("[Source]", lambda u=excerpt["source_url"]: self.open_url(u))
             out.insert(tk.END, "\n\n")
         out.config(state=tk.DISABLED)
 

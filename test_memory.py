@@ -18,10 +18,10 @@ from unittest.mock import MagicMock, patch
 from urllib.parse import parse_qs, urlparse
 
 from coaching import LearningStore, normalize_result
-from memory_tools import dictionary_links, make_card, read_history, replay_result, spreadsheet_text
+from memory_tools import correction_record, dictionary_links, make_card, read_history, replay_result, spreadsheet_text
 from test_coaching import OPTS, notebook_path, sample
 import test_coaching
-from quotes import QUOTE_BANK, quote_for
+from quotes import BOOK_EXCERPTS, QUOTE_BANK, excerpt_for, quote_for
 
 
 class MemoryTests(unittest.TestCase):
@@ -75,6 +75,7 @@ class MemoryTests(unittest.TestCase):
     def test_full_snapshot_replays_focus_and_corrections(self):
         data = normalize_result(sample(), OPTS)
         data["quote"] = quote_for(2)
+        data["excerpt"] = excerpt_for(3)
         data["request_options"] = {"resolved_focus": "persuasion"}
         data["truncated"] = True
         entry = {"id": "abc", "query": "Original", "result": data, "timestamp": "2026-10-04"}
@@ -82,6 +83,7 @@ class MemoryTests(unittest.TestCase):
         self.assertEqual(result["versions"], data["versions"])
         self.assertEqual(result["learning"], data["learning"])
         self.assertEqual(result["quote"], data["quote"])
+        self.assertEqual(result["excerpt"], data["excerpt"])
         self.assertTrue(result["truncated"])
         self.assertEqual(result["request_options"]["resolved_focus"], "persuasion")
         with self.assertRaises(ValueError):
@@ -98,6 +100,29 @@ class MemoryTests(unittest.TestCase):
         self.assertEqual(rows[1][rows[0].index("Reference URL")], quote["source_url"])
 
 
+    def test_excerpt_rotation_and_untrusted_replay(self):
+        self.assertEqual(excerpt_for(len(BOOK_EXCERPTS)), excerpt_for(0))
+        self.assertEqual(len({excerpt_for(i)["id"] for i in range(len(BOOK_EXCERPTS))}), len(BOOK_EXCERPTS))
+        prefixes = {"excerpt": "https://www.gutenberg.org/ebooks/", "summary": "https://openlibrary.org/search?"}
+        for excerpt in BOOK_EXCERPTS:
+            self.assertEqual(set(excerpt), set(BOOK_EXCERPTS[0]))
+            self.assertTrue(excerpt["source_url"].startswith(prefixes[excerpt["kind"]]))
+        self.assertEqual({e["kind"] for e in BOOK_EXCERPTS[:3]}, {"summary", "excerpt"})
+        data = dict(sample(), excerpt=dict(excerpt_for(0), source_url="https://example.com"))
+        self.assertNotIn("excerpt", replay_result({"query": "x", "result": data}))
+
+    def test_correction_record_only_when_something_changed(self):
+        result = normalize_result(dict(sample(), notes=[{"wrong": "of", "right": "on", "why": "After depend.",
+                                                          "category": "preposition"}]), OPTS)
+        result.update(request_id="abc", timestamp="2026-10-05", request_options={"context": "meeting"})
+        record = correction_record("It depends of you.", result, "example")
+        self.assertEqual(record["corrections"], [{"wrong": "of", "right": "on", "why": "After depend.",
+                                                  "category": "preposition"}])
+        self.assertEqual((record["original"], record["context"], record["id"]), ("It depends of you.", "meeting", "abc"))
+        clean = normalize_result(sample(), OPTS)
+        self.assertIsNone(correction_record("I might need another day.", clean))
+
+
 class IntegrationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -112,19 +137,30 @@ class IntegrationTests(unittest.TestCase):
         api.unsupported = {}
         api._create = MagicMock(return_value=SimpleNamespace(
             choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(sample())), finish_reason="stop")], usage=None))
-        with notebook_path() as path, patch.object(m, "API_LOG_FILE", path):
+        with notebook_path() as path, notebook_path() as corrections, patch.object(m, "API_LOG_FILE", path), \
+                patch.object(m, "CORRECTIONS_FILE", corrections):
             result = api.get_rewrites("A draft", "example", 0.4, "test prompt", OPTS)
+            self.assertEqual(json.loads(Path(corrections).read_text(encoding="utf-8"))["original"], "A draft")
+            self.assertEqual(result["excerpt"], excerpt_for(0))
             entries, _ = read_history(path)
             self.assertEqual(entries[0]["result"], result)
             self.assertEqual(result["quote"], quote_for(0))
             self.assertEqual(replay_result(entries[0])["versions"], result["versions"])
             no_quote = api.get_rewrites("No quote", "example", 0.4, "test prompt", dict(OPTS, quote=False))
             self.assertNotIn("quote", no_quote)
+            idea = {"title": "Grit", "author": "Angela Duckworth", "year": "2016", "text": "Passion and perseverance.",
+                    "notice": "grit", "application": "Practice daily."}
+            api._create.return_value.choices[0].message.content = json.dumps(dict(sample(), book_idea=idea))
+            with_idea = api.get_rewrites("A draft", "example", 0.4, "test prompt", OPTS)
+            self.assertEqual(with_idea["book_idea"], idea)
+            self.assertNotIn("excerpt", with_idea)
+            self.assertEqual(replay_result(read_history(path)[0][0])["book_idea"], idea)
+            api._create.return_value.choices[0].message.content = json.dumps(sample())
             api._create.side_effect = RuntimeError("Provider unavailable")
             with self.assertRaises(RuntimeError):
                 api.get_rewrites("Another draft", "example", 0.4, "test prompt", OPTS)
             entries, _ = read_history(path)
-            self.assertEqual(len(entries), 3)
+            self.assertEqual(len(entries), 4)
             self.assertEqual(entries[0]["status"], "error")
 
     def test_history_display_has_no_clipboard_or_usage_side_effects(self):
