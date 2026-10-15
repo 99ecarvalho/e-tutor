@@ -1,4 +1,4 @@
-# Runs E-Tutor, creating the .venv virtual environment on first use.
+# Runs E-Tutor, creating the Windows virtual environment on first use.
 #
 # Copyright (c) 2025-2026 Eduardo Correia <ecorreia@apliant.com.br>
 #
@@ -11,11 +11,12 @@
 Set-Location -Path $PSScriptRoot
 Write-Host "Starting E-Tutor..."
 
-$venvPython = ".venv\Scripts\python.exe"
+$venvDir = ".venv-windows"
+$venvPython = Join-Path $venvDir "Scripts\python.exe"
 
 if (-Not (Test-Path $venvPython)) {
-    Write-Host "Virtual environment not found. Creating .venv..."
-    if (Get-Command py -ErrorAction SilentlyContinue) { py -3 -m venv .venv } else { python -m venv .venv }
+    Write-Host "Virtual environment not found. Creating $venvDir..."
+    if (Get-Command py -ErrorAction SilentlyContinue) { py -3 -m venv $venvDir } else { python -m venv $venvDir }
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to create virtual environment" -ForegroundColor Red
         exit 1

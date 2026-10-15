@@ -15,18 +15,19 @@ $appName = "e-tutor"
 $iconPath = "icon.ico"  # optional; skipped if the file doesn't exist
 $outputDir = "output"
 $workDir = Join-Path $outputDir "build"
-$venvPython = ".venv\Scripts\python.exe"
+$venvDir = ".venv-windows"
+$venvPython = Join-Path $venvDir "Scripts\python.exe"
 
 if (-Not (Test-Path $venvPython)) {
-    Write-Host "Virtual environment not found. Creating .venv..."
-    if (Get-Command py -ErrorAction SilentlyContinue) { py -3 -m venv .venv } else { python -m venv .venv }
+    Write-Host "Virtual environment not found. Creating $venvDir..."
+    if (Get-Command py -ErrorAction SilentlyContinue) { py -3 -m venv $venvDir } else { python -m venv $venvDir }
     if ($LASTEXITCODE -ne 0) { throw "Failed to create virtual environment" }
 }
 
 # Python 3.10.0 has a bytecode bug that crashes PyInstaller (fixed in 3.10.1).
 $pyVersion = & $venvPython -c "import sys; print('.'.join(map(str, sys.version_info[:3])))"
 if ($pyVersion -eq "3.10.0") {
-    throw "The .venv uses Python 3.10.0, which PyInstaller can't build with. Delete .venv and run this script again; it will be recreated with a newer Python."
+    throw "The $venvDir environment uses Python 3.10.0, which PyInstaller can't build with. Delete $venvDir and run this script again; it will be recreated with a newer Python."
 }
 
 Write-Host "Installing requirements and PyInstaller..."

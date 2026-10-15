@@ -1,5 +1,5 @@
 #!/bin/bash
-# Runs E-Tutor, creating the .venv virtual environment on first use.
+# Runs E-Tutor, creating the platform-specific virtual environment on first use.
 #
 # Copyright (c) 2025-2026 Eduardo Correia <ecorreia@apliant.com.br>
 #
@@ -12,12 +12,21 @@ set -e
 cd "$(dirname "$0")"
 echo "Starting E-Tutor..."
 
-VENV_PYTHON=".venv/bin/python"
+case "$(uname -s)" in
+    Linux*) VENV_DIR=".venv-linux" ;;
+    Darwin*) VENV_DIR=".venv-macos" ;;
+    *)
+        echo "Unsupported operating system: $(uname -s)" >&2
+        exit 1
+        ;;
+esac
+
+VENV_PYTHON="$VENV_DIR/bin/python"
 
 if [ ! -x "$VENV_PYTHON" ]; then
-    echo "Virtual environment not found. Creating .venv..."
+    echo "Virtual environment not found. Creating $VENV_DIR..."
     PYTHON=$(command -v python3 || command -v python)
-    "$PYTHON" -m venv .venv
+    "$PYTHON" -m venv "$VENV_DIR"
     echo "Virtual environment created."
 fi
 

@@ -73,17 +73,22 @@ This remains a text coach: spoken rehearsal cues do not assess your actual pronu
 ./run.sh
 ```
 
-The scripts create a `.venv` virtual environment on first run, install the requirements and start `e-tutor.py`. They work from any folder. On Windows, `.venv` is created with the newest Python known to the `py` launcher.
+The scripts create an OS-specific virtual environment on first run, install the requirements and start `e-tutor.py`. They work from any folder and use `.venv-windows`, `.venv-linux`, or `.venv-macos`, so platforms can share a checkout without reusing an incompatible environment. On Windows, the environment is created with the newest Python known to the `py` launcher.
 
 > On Linux, the `keyboard` library needs root to register global hotkeys. Without it, the app still works through the window.
 
 ### Manual setup
 
 ```sh
-python -m venv .venv
-.venv\Scripts\python -m pip install -r requirements.txt   # Windows
-.venv/bin/python -m pip install -r requirements.txt       # Linux/Mac
-.venv\Scripts\python e-tutor.py                           # or .venv/bin/python e-tutor.py
+python -m venv .venv-windows                               # Windows
+.venv-windows\Scripts\python -m pip install -r requirements.txt
+.venv-windows\Scripts\python e-tutor.py
+python3 -m venv .venv-linux                                # Linux
+.venv-linux/bin/python -m pip install -r requirements.txt
+.venv-linux/bin/python e-tutor.py
+python3 -m venv .venv-macos                                # macOS
+.venv-macos/bin/python -m pip install -r requirements.txt
+.venv-macos/bin/python e-tutor.py
 ```
 
 ## Building the Windows executable
@@ -92,7 +97,7 @@ python -m venv .venv
 .\build.ps1
 ```
 
-This installs PyInstaller into `.venv` and produces `output\e-tutor.exe` (git-ignored). Python 3.10.0 can't be used because of a bug that crashes PyInstaller; the script stops with a message if `.venv` uses it. To use a custom icon, put an `icon.ico` in the project folder.
+This installs PyInstaller into `.venv-windows` and produces `output\e-tutor.exe` (git-ignored). Python 3.10.0 can't be used because of a bug that crashes PyInstaller; the script stops with a message if `.venv-windows` uses it. To use a custom icon, put an `icon.ico` in the project folder.
 
 The exe keeps `.env`, `user_prefs.json`, `learning_notebook.json` and `log\` in its own folder. Copy your `.env` next to it, or set the key from `Options` > `API Key & Endpoint`. Source and executable installations have separate preferences and notebooks unless run from the same folder. Rebuild after changing the source.
 
@@ -174,7 +179,7 @@ To restore the window from the tray, double-click the tray icon or choose `Show`
 
 ## Verification
 
-Run `.venv\Scripts\python -m unittest -v test_coaching test_memory` on Windows. Tests cover response validation, teaching controls, review persistence and scheduling, unreadable notebooks, draft preservation, Tk UI rendering, individual saves, personal notes, spreadsheet exports, dictionary query encoding, history logging and backward-compatible replay. The GUI smoke test requires a desktop session and installed dependencies; tests do not call a live API or change your real preferences/notebook.
+Run `.venv-windows\Scripts\python -m unittest -v test_coaching test_memory` on Windows, or `.venv-linux/bin/python -m unittest -v test_coaching test_memory` on Linux. Tests cover response validation, teaching controls, review persistence and scheduling, unreadable notebooks, draft preservation, Tk UI rendering, individual saves, personal notes, spreadsheet exports, dictionary query encoding, history logging and backward-compatible replay. The GUI smoke test requires a desktop session and installed dependencies; tests do not call a live API or change your real preferences/notebook.
 
 ## Contributing
 

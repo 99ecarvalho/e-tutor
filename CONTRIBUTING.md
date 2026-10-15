@@ -44,8 +44,9 @@ reproduce the problem is the most valuable thing you can provide.
 
 ## Development setup
 
-E-Tutor is a Python 3.8+ Tkinter application. The helper scripts create a
-`.venv` and install the requirements; there is nothing else to set up.
+E-Tutor is a Python 3.8+ Tkinter application. The helper scripts create an
+OS-specific virtual environment (`.venv-windows`, `.venv-linux`, or
+`.venv-macos`) and install the requirements; there is nothing else to set up.
 
 ```bash
 git clone https://github.com/99ecarvalho/e-tutor.git
@@ -71,7 +72,7 @@ Before opening a pull request:
 1. Run the tests and add one that fails without your change:
 
    ```bash
-   .venv/bin/python -m unittest -v test_coaching test_memory
+   .venv-linux/bin/python -m unittest -v test_coaching test_memory
    ```
 
 2. Launch the app, send a request with both `Grammar only` and a full
